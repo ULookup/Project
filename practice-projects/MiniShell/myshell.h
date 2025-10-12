@@ -17,6 +17,8 @@ bool GetCommandString(char cmd_str_buff[],int len);
 
 bool ParseCommandString(char cmd[]);
 
+void CheckRedir(char cmd[]);
+
 void ForkAndExec();
 
 bool BuildInCommandExec();

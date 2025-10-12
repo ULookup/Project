@@ -1,0 +1,19 @@
+total 44
+-rw-rw-r-- 1 icepop icepop   637 Oct 12 13:38 main.cc
+-rw-rw-r-- 1 icepop icepop    92 Oct 11 12:46 Makefile
+-rwxrwxr-x 1 icepop icepop 19984 Oct 12 13:38 myshell
+-rw-rw-r-- 1 icepop icepop  5626 Oct 12 13:25 myshell.cc
+-rw-rw-r-- 1 icepop icepop   334 Oct 12 13:28 myshell.h
+-rw-rw-r-- 1 icepop icepop    15 Oct 12 13:39 tga.txt
+-rw-rw-rw- 1 icepop icepop     0 Oct 12 13:41 tgs.txt
+total 56
+drwxrwxr-x  2 icepop icepop  4096 Oct 12 13:40 .
+drwxrwxr-x 18 icepop icepop  4096 Oct 12 13:37 ..
+-rw-rw-r--  1 icepop icepop   637 Oct 12 13:38 main.cc
+-rw-rw-r--  1 icepop icepop    92 Oct 11 12:46 Makefile
+-rwxrwxr-x  1 icepop icepop 19984 Oct 12 13:38 myshell
+-rw-rw-r--  1 icepop icepop  5626 Oct 12 13:25 myshell.cc
+-rw-rw-r--  1 icepop icepop   334 Oct 12 13:28 myshell.h
+-rw-rw-r--  1 icepop icepop    15 Oct 12 13:39 tga.txt
+-rw-rw-rw-  1 icepop icepop   393 Oct 12 13:41 tgs.txt
+/home/icepop/Github_Repositories/Project/practice-projects/MiniShell

@@ -6,12 +6,22 @@
 #include<string>
 #include<sys/types.h>
 #include<sys/wait.h>
+#include<ctype.h>
+#include<sys/stat.h>
+#include<fcntl.h>
 
 char *gargv[ARGS] = {NULL};
 int gargc = 0;
 char pwd[1024];
 int lastcode = 0;
 
+#define NONE_REDIR 0
+#define OUTPUT_REDIR 1
+#define APPEND_REDIR 2
+#define INPUT_REDIR 3
+
+std::string filename;
+int redir_type = NONE_REDIR;
 
 void Begin()
 {
@@ -110,6 +120,54 @@ bool ParseCommandString(char cmd[])
 
   return true;
 }
+#define trimspace(start) do{\
+  while(isspace(*start))\
+  {\
+    start++;\
+  }\
+}while(0)
+
+void CheckRedir(char cmd[])
+{
+  char* start = cmd;
+  char* end = cmd + strlen(cmd) -1;
+
+  while(start <= end)
+  {
+    if(*start == '>'){
+      if(*(start+1) == '>'){
+        //追加重定向
+        redir_type = APPEND_REDIR;
+        *start = '\0';
+        start+=2;
+        trimspace(start);
+        filename = start;
+        break;
+      }
+      else{
+        //输出重定向
+        redir_type = OUTPUT_REDIR;
+        *start = '\0';
+        start++;
+        trimspace(start);
+        filename = start;
+        break;
+      }   
+    }
+    else if(*start == '<'){
+      //输入重定向
+      redir_type = INPUT_REDIR;
+      *start = '\0';
+      start++;
+      trimspace(start);
+      filename = start;
+      break;
+    }
+    else{
+      start++;
+    }
+  }
+}
 
 void ForkAndExec()
 {
@@ -122,6 +180,33 @@ void ForkAndExec()
   else if(id == 0)
   {
     //子进程
+    if(redir_type == OUTPUT_REDIR){
+      int output = open(filename.c_str(),O_CREAT | O_WRONLY | O_TRUNC, 0666);
+      if(output < 0){
+        perror("open fail!\n");
+        exit(1);
+      }
+      dup2(output,1);
+    }
+    else if(redir_type == INPUT_REDIR){
+      int input = open(filename.c_str(),O_RDONLY);
+      if(input < 0){
+        perror("open fail!\n");
+        exit(1);
+      }
+      dup2(input,0);
+    }
+    else if(redir_type == APPEND_REDIR){
+      int appendfd = open(filename.c_str(),O_CREAT | O_WRONLY | O_APPEND);
+      if(appendfd < 0){
+        perror("open fail!\n");
+        exit(1);
+      }
+      dup2(appendfd,1);
+    }
+    else{
+      //Do Nothing
+    }
     execvp(gargv[0],gargv);
     exit(0);
   }
@@ -141,6 +226,8 @@ void InitGlobal()
 {
   gargc = 0;
   memset(gargv,0,sizeof(gargv));
+  filename.clear();
+  redir_type = NONE_REDIR;
 }
 
 bool BuildInCommandExec()
