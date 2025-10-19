@@ -34,8 +34,9 @@ static std::string GetUserName()
 }
 static std::string GetHostName()
 {
-  std::string hostname = getenv("HOSTNAME");
-  return hostname.empty() ? "None" : hostname;
+  const char* host = getenv("HOSTNAME");
+  std::string hostname = host ? host : "None";
+  return hostname;
 }
 
 static std::string GetPwd()
