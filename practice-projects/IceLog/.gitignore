@@ -1,0 +1,84 @@
+# ============================
+# IceLog Project .gitignore
+# ============================
+
+# --- Build & Binary Files ---
+build/
+bin/
+obj/
+*.o
+*.a
+*.so
+*.dll
+*.exe
+*.out
+*.log
+
+# --- CMake Cache & Temp ---
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+install_manifest.txt
+Testing/
+CTestTestfile.cmake
+
+# --- IDE / Editor Config ---
+.vscode/
+.idea/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# --- OS Generated Files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Backup / Temp Files ---
+*~
+*.swp
+*.swo
+*.tmp
+*.bak
+
+# --- Dependency / External Tools ---
+# 如果你以后引入第三方依赖或构建产物，可以忽略整个 vendor/ 或 extern/ 目录
+vendor/
+extern/
+
+# --- Logs & Runtime Outputs ---
+*.pid
+*.log
+*.trace
+
+# --- Test Outputs ---
+tests/output/
+tests/*.tmp
+tests/*.log
+
+# --- Coverage / Profiling ---
+*.gcda
+*.gcno
+*.gcov
+coverage/
+.profraw
+.profdata
+
+# --- Documentation (auto-generated) ---
+docs/_build/
+docs/generated/
+*.pdf
+
+# --- System-Specific ---
+# macOS
+.AppleDouble
+# Windows
+ehthumbs.db
+
+# --- Optional C++ Tools ---
+# clangd / ccls
+compile_commands.json
+.clangd/
+.ccls-cache/
+
