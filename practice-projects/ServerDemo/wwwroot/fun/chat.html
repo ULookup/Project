@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IceChat · iPad 聊天室</title>
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Helvetica Neue", Arial;
+    background: radial-gradient(circle at 20% 25%, #d6e9ff 0%, #f9fbff 40%, #f5f5f5 100%);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .bg-circle {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.4;
+    animation: float 14s ease-in-out infinite;
+  }
+  .c1 { width: 420px; height: 420px; background: #007aff; top: 12%; left: 12%; animation-delay: 0s; }
+  .c2 { width: 480px; height: 480px; background: #ffb3b3; bottom: 10%; right: 15%; animation-delay: 3s; }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-40px) scale(1.05); }
+  }
+
+  .page-title {
+    text-align: center;
+    color: #222;
+    margin-bottom: 24px;
+    z-index: 5;
+  }
+  .page-title h1 {
+    font-size: 32px;
+    margin: 0;
+    color: #007aff;
+  }
+  .page-title p {
+    font-size: 15px;
+    color: #666;
+    margin-top: 6px;
+  }
+
+  /* ===== iPad 主体 ===== */
+  .ipad {
+    width: 940px;
+    height: 660px;
+    border-radius: 30px;
+    box-shadow: 0 18px 60px rgba(0,0,0,0.25);
+    background: linear-gradient(180deg, #edf2f7 0%, #ffffff 100%);
+    overflow: hidden;
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    z-index: 3;
+  }
+
+  /* ===== 返回首页按钮（悬浮在 iPad 外部）===== */
+  .home-btn {
+    position: absolute;
+    top: 20px;
+    left: calc(50% - 470px);
+    background: linear-gradient(145deg, #007aff, #005ecb);
+    border: none;
+    border-radius: 20px;
+    color: white;
+    font-size: 15px;
+    padding: 8px 16px;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0,122,255,0.3);
+    transition: 0.25s;
+    z-index: 10;
+  }
+  .home-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,122,255,0.45);
+  }
+
+  .chat-area { flex: 1; display: flex; flex-direction: column; }
+
+  header {
+    padding: 14px;
+    text-align: center;
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(10px);
+    font-size: 20px;
+    font-weight: 600;
+    color: #007aff;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .clear {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    color: #007aff;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  /* 聊天内容 */
+  #chatbox {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column-reverse;
+    background: #f9fbfd;
+    padding: 12px 22px;
+    scroll-behavior: smooth;
+  }
+  .msg {
+    max-width: 70%;
+    padding: 10px 14px;
+    margin: 8px 0;
+    border-radius: 16px;
+    word-break: break-word;
+    line-height: 1.55;
+    font-size: 16px;
+    animation: fadein 0.25s ease;
+  }
+  .msg .meta {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  .self { align-self: flex-end; background: #007aff; color: white; border-top-right-radius: 4px; }
+  .other { align-self: flex-start; background: #eaeef3; color: #222; border-top-left-radius: 4px; }
+
+  @keyframes fadein { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
+
+  footer {
+    display: flex; padding: 10px 16px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid #e0e0e0;
+  }
+
+  textarea {
+    flex: 1;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 18px;
+    background: #f1f3f5;
+    outline: none;
+    font-size: 16px;
+    resize: none;
+    line-height: 1.4;
+    height: 48px;
+  }
+
+  button.send {
+    margin-left: 10px;
+    border: none;
+    border-radius: 20px;
+    background: #007aff;
+    color: white;
+    padding: 10px 18px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  /* ===== 在线用户列表 ===== */
+  #sidebar {
+    width: 220px;
+    background: rgba(255,255,255,0.95);
+    border-left: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px;
+    overflow-y: auto;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+  }
+  #sidebar h3 {
+    margin: 6px 0 12px 0;
+    font-size: 16px;
+    color: #007aff;
+    font-weight: 600;
+  }
+  .user-item {
+    position: relative;
+    width: 90%;
+    margin: 5px 0;
+    padding: 8px 12px 8px 16px;
+    border-radius: 12px;
+    background: #f6f9fc;
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+    transition: all 0.25s ease;
+    overflow: hidden;
+  }
+  .user-item::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 5px;
+    height: 100%;
+    background: linear-gradient(180deg, #007aff, #00c7be);
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+    opacity: 0.6;
+  }
+  .user-item:hover {
+    background: #eaf3ff;
+    transform: translateX(3px);
+  }
+  .user-item.self-user {
+    background: linear-gradient(90deg, #007aff, #34c9ff);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(0,122,255,0.35);
+  }
+  .user-item.self-user::before {
+    background: rgba(255,255,255,0.3);
+    opacity: 1;
+  }
+
+  /* ===== 登录弹窗（美化版）===== */
+#loginModal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 40%, rgba(0, 122, 255, 0.15), rgba(255,255,255,0.2));
+  backdrop-filter: blur(10px) saturate(130%);
+  z-index: 100;
+  animation: fadebg 0.5s ease forwards;
+}
+
+@keyframes fadebg {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+#loginModal .modal-box {
+  position: relative;
+  width: 360px;
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(25px) saturate(180%);
+  padding: 40px 48px 48px 48px;
+  border-radius: 24px;
+  box-shadow: 0 15px 50px rgba(0,0,0,0.25);
+  text-align: center;
+  animation: popup 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+  transform-origin: center;
+}
+
+@keyframes popup {
+  from { opacity: 0; transform: scale(0.92) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+#loginModal h2 {
+  margin: 0 0 10px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #007aff;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 6px rgba(0,122,255,0.2);
+}
+
+#loginModal p {
+  font-size: 15px;
+  color: #555;
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+
+#loginModal input {
+  width: 260px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 16px;
+  border: 1px solid rgba(0,122,255,0.25);
+  background: rgba(255,255,255,0.7);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+  transition: all 0.25s ease;
+  outline: none;
+}
+
+#loginModal input:focus {
+  border-color: #007aff;
+  box-shadow: 0 0 10px rgba(0,122,255,0.25), inset 0 1px 4px rgba(0,0,0,0.05);
+  background: rgba(255,255,255,0.9);
+  transform: scale(1.02);
+}
+
+#loginModal button {
+  margin-top: 26px;
+  border: none;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #007aff, #34c9ff);
+  color: white;
+  padding: 12px 36px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  box-shadow: 0 6px 18px rgba(0,122,255,0.35);
+  transition: all 0.25s ease;
+}
+
+#loginModal button:hover {
+  box-shadow: 0 8px 24px rgba(0,122,255,0.45);
+  transform: translateY(-2px);
+}
+
+#loginModal button:active {
+  transform: scale(0.96);
+}
+
+</style>
+</head>
+
+<body>
+<div class="bg-circle c1"></div>
+<div class="bg-circle c2"></div>
+
+<div class="page-title">
+  <h1>IceChat · iPad 聊天室</h1>
+  <p>实时沟通 · 在线状态 · 现代化UI</p>
+</div>
+
+<!-- 悬浮返回按钮 -->
+<button class="home-btn" onclick="window.location.href='/index.html'">← 返回首页</button>
+
+<div class="ipad">
+  <div class="chat-area">
+    <header>💬 实时聊天 <button class="clear" onclick="clearLocal()">清空</button></header>
+    <div id="chatbox" style="display:none;"></div>
+    <footer style="display:none;">
+      <textarea id="msgInput" placeholder="输入消息...(Enter发送, Shift+Enter换行)"></textarea>
+      <button class="send" onclick="sendMsg()">发送</button>
+    </footer>
+  </div>
+  <div id="sidebar">
+    <h3>🟢 在线用户</h3>
+    <div id="userList"></div>
+  </div>
+</div>
+
+<!-- 登录弹窗 -->
+<div id="loginModal">
+  <div class="modal-box">
+    <h2>欢迎来到 IceChat 🎐</h2>
+    <p>请输入你的昵称开始聊天</p>
+    <input id="nameInput" placeholder="你的名字">
+    <br>
+    <button onclick="confirmName()">进入</button>
+  </div>
+</div>
+
+<script>
+let username = "";
+let lastTs = 0;
+let idSet = new Set();
+const box = document.getElementById("chatbox");
+const footer = document.querySelector("footer");
+const modal = document.getElementById("loginModal");
+
+function addMsg(m){
+  const id=`${m.ts}-${m.user}-${m.text}`;
+  if(idSet.has(id)) return;
+  idSet.add(id);
+  const div=document.createElement("div");
+  div.className="msg "+(m.user===username?"self":"other");
+  div.innerHTML=`<div class="meta">${m.user}</div>${m.text}`;
+  box.prepend(div);
+}
+async function fetchMessages(){
+  if(!username) return;
+  try{
+    const res=await fetch(`/api/message?since=${lastTs}`);
+    const msgs=await res.json();
+    if(msgs.length>0){
+      msgs.forEach(addMsg);
+      const maxTs=Math.max(...msgs.map(m=>m.ts||0));
+      if(maxTs>lastTs) lastTs=maxTs;
+    }
+  }catch(e){}
+}
+async function sendMsg(){
+  const input=document.getElementById("msgInput");
+  const text=input.value.trim();
+  if(!text)return;
+  input.value="";
+  const nowTs=Math.floor(Date.now()/1000);
+  addMsg({user:username,text,ts:nowTs});
+  await fetch("/api/message",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user:username,text})});
+  if(nowTs>lastTs) lastTs=nowTs;
+}
+function confirmName(){
+  const val=document.getElementById("nameInput").value.trim();
+  if(!val){alert("请输入昵称");return;}
+  username=val;
+  localStorage.setItem("icechat_user",username);
+  modal.style.display="none";
+  box.style.display="flex";
+  footer.style.display="flex";
+  fetchMessages();
+  setInterval(fetchMessages,800);
+  setInterval(()=>{fetch("/api/heartbeat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user:username})});},5000);
+  setInterval(async()=>{
+  try{
+    const res = await fetch("/api/online");
+    const users = await res.json();
+    const nowSet = new Set(users);
+
+    // 检测变化
+    for(const u of users){
+      if(!lastUsers.has(u)){
+        if(u !== username) showStatus(`✨ ${u} 加入了聊天室`, "#007aff");
+      }
+    }
+    for(const u of lastUsers){
+      if(!nowSet.has(u)){
+        if(u !== username) showStatus(`🍂 ${u} 离开了聊天室`, "#ff3b30");
+      }
+    }
+    lastUsers = nowSet;
+
+    // 更新显示
+    const list = document.getElementById("userList");
+    list.innerHTML = users.map(u=>{
+      const isSelf=(u===username);
+      return `<div class="user-item ${isSelf?'self-user':''}">${u}</div>`;
+    }).join("");
+  }catch(e){console.warn("在线用户更新失败",e);}
+},3000);
+
+}
+function clearLocal(){
+  if(!confirm("确定清空本地聊天记录吗？"))return;
+  idSet=new Set();lastTs=Math.floor(Date.now()/1000);box.innerHTML="";
+}
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&e.target.id==="msgInput"){
+    if(!e.shiftKey){e.preventDefault();sendMsg();}
+  }
+});
+window.onload=()=>{
+  const saved=localStorage.getItem("icechat_user");
+  if(saved){document.getElementById("nameInput").value=saved;}
+};
+// ===== 用户状态变化提示 =====
+let lastUsers = new Set();
+
+function showStatus(message, color="#007aff") {
+  const banner = document.getElementById("statusBanner");
+  banner.textContent = message;
+  banner.style.background = color;
+  banner.classList.remove("fade-out");
+  banner.classList.add("show");
+  setTimeout(()=>{
+    banner.classList.add("fade-out");
+    setTimeout(()=>banner.classList.remove("show","fade-out"),500);
+  },2800);
+}
+
+</script>
+</body>
+</html>

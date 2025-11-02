@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🌤 蓝白诗签</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+:root {
+  --accent1:#2196f3;
+  --accent2:#6ec6ff;
+  --bg1:#ffffff;
+  --text:#1a1a1a;
+  --card-bg:rgba(255,255,255,0.5);
+}
+body {
+  margin:0;
+  height:100vh;
+  background:linear-gradient(180deg,#ffffff,#f2f8ff);
+  color:var(--text);
+  font-family:"Inter","PingFang SC","Microsoft YaHei",sans-serif;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+/* ====== 返回主页按钮 ====== */
+a.home {
+  position:absolute;top:20px;left:20px;
+  text-decoration:none;
+  background:rgba(33,150,243,0.1);
+  color:var(--accent1);
+  padding:6px 14px;
+  border-radius:8px;
+  border:1px solid rgba(33,150,243,0.2);
+  backdrop-filter:blur(4px);
+  font-weight:500;
+  transition:.25s;
+  z-index:5;
+}
+a.home:hover {background:rgba(33,150,243,0.2);}
+
+/* ====== 卡片样式 ====== */
+#card {
+  position:relative;
+  background:var(--card-bg);
+  backdrop-filter:blur(20px);
+  border-radius:20px;
+  box-shadow:0 8px 30px rgba(0,0,0,0.1);
+  padding:40px 60px;
+  max-width:600px;
+  width:85%;
+  text-align:center;
+  z-index:3;
+  transition:transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1), box-shadow .4s;
+}
+#card.press {transform:scale(0.97);}
+#card.float {
+  animation:floatUp 1s ease-out;
+  box-shadow:0 10px 40px rgba(33,150,243,0.4);
+}
+@keyframes floatUp {
+  0% {transform:translateY(0) scale(1);}
+  30% {transform:translateY(-10px) rotateY(10deg);}
+  60% {transform:translateY(-15px) rotateY(-10deg);}
+  100% {transform:translateY(0) rotateY(0deg);}
+}
+h1 {
+  font-size:28px;
+  color:#0d47a1;
+  margin-bottom:12px;
+}
+p#poem {
+  font-size:22px;
+  line-height:1.8;
+  margin:20px 0;
+  font-family:"STKaiti","KaiTi","FZKai-Z03","SimSun",serif;
+  color:#0d0d0d;
+  transition:opacity .3s ease;
+}
+p#author {
+  color:#555;
+  font-size:15px;
+  margin-bottom:30px;
+  transition:opacity .3s ease;
+}
+
+/* ====== 按钮组 ====== */
+button {
+  border:none;
+  border-radius:10px;
+  padding:10px 20px;
+  font-size:15px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.25s;
+}
+#draw {
+  background:linear-gradient(135deg,var(--accent1),var(--accent2));
+  color:#fff;
+}
+#fav {
+  background:rgba(33,150,243,0.15);
+  color:#1565c0;
+}
+#clear {
+  background:rgba(33,150,243,0.08);
+  color:#1565c0;
+}
+button:hover {transform:translateY(-2px);box-shadow:0 4px 10px rgba(33,150,243,0.3);}
+
+/* ====== Toast ====== */
+.toast {
+  position:fixed;
+  bottom:40px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(33,150,243,0.9);
+  color:#fff;
+  padding:10px 20px;
+  border-radius:20px;
+  font-size:14px;
+  opacity:0;
+  transition:opacity .5s ease;
+  z-index:5;
+}
+.toast.show{opacity:1;}
+
+/* ====== 背景粒子 ====== */
+canvas {
+  position:absolute;
+  inset:0;
+  z-index:1;
+}
+</style>
+</head>
+<body>
+<a href="/" class="home">🏠 首页</a>
+<canvas id="bgCanvas"></canvas>
+
+<div id="card">
+  <h1>🌤 今日诗签</h1>
+  <p id="poem">行到水穷处，坐看云起时。</p>
+  <p id="author">—— 王维《终南别业》</p>
+  <div>
+    <button id="draw">抽一签 ✨</button>
+    <button id="fav">收藏 💙</button>
+    <button id="clear">查看收藏 📜</button>
+  </div>
+</div>
+
+<div id="toast" class="toast">已收藏</div>
+
+<audio id="clickSound" preload="auto">
+  <source src="https://cdn.pixabay.com/download/audio/2023/02/21/audio_19d9b3bb51.mp3?filename=ui-click-173309.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+/* ======== 蓝色互动粒子背景 ======== */
+const canvas=document.getElementById("bgCanvas");
+const ctx=canvas.getContext("2d");
+let w,h,particles=[];
+let mouse={x:0.5,y:0.5};
+
+function resize(){w=canvas.width=window.innerWidth;h=canvas.height=window.innerHeight;}
+window.addEventListener("resize",resize);
+resize();
+
+document.addEventListener("mousemove",e=>{
+  mouse.x=e.clientX/w;
+  mouse.y=e.clientY/h;
+});
+
+function init(){
+  particles=[];
+  const count=100;
+  for(let i=0;i<count;i++){
+    particles.push({
+      x:Math.random()*w,
+      y:Math.random()*h,
+      r:Math.random()*2+1,
+      a:Math.random()*Math.PI*2,
+      speed:0.3+Math.random()*0.5,
+      color:`rgba(33,150,243,${0.2+Math.random()*0.8})`
+    });
+  }
+}
+init();
+
+function draw(){
+  ctx.clearRect(0,0,w,h);
+  for(const p of particles){
+    p.x+=Math.cos(p.a)*p.speed+(mouse.x-0.5)*0.8;
+    p.y+=Math.sin(p.a)*p.speed+(mouse.y-0.5)*0.8;
+    if(p.x<0)p.x=w;if(p.x>w)p.x=0;if(p.y<0)p.y=h;if(p.y>h)p.y=0;
+    const flicker=Math.sin(Date.now()/400+p.x)*0.4+0.6;
+    ctx.beginPath();
+    ctx.fillStyle=p.color.replace(/\d?\.\d+\)/,flicker+")");
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fill();
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+
+/* ======== 动画与抽签逻辑 ======== */
+const card=document.getElementById("card");
+const poemEl=document.getElementById("poem");
+const authorEl=document.getElementById("author");
+const clickSound=document.getElementById("clickSound");
+const toast=document.getElementById("toast");
+
+function flashParticles(){
+  for(const p of particles){
+    p.color=`rgba(33,150,243,${0.5+Math.random()*0.5})`;
+  }
+  setTimeout(()=>{init();},300);
+}
+
+const poems=[
+  {text:"行到水穷处，坐看云起时。", author:"—— 王维《终南别业》"},
+  {text:"长风破浪会有时，直挂云帆济沧海。", author:"—— 李白《行路难》"},
+  {text:"山重水复疑无路，柳暗花明又一村。", author:"—— 陆游《游山西村》"},
+  {text:"不畏浮云遮望眼，自缘身在最高层。", author:"—— 王安石《登飞来峰》"},
+  {text:"莫听穿林打叶声，何妨吟啸且徐行。", author:"—— 苏轼《定风波》"},
+  {text:"海上生明月，天涯共此时。", author:"—— 张九龄《望月怀远》"},
+  {text:"采菊东篱下，悠然见南山。", author:"—— 陶渊明《饮酒》"},
+  {text:"黄沙百战穿金甲，不破楼兰终不还。", author:"—— 王昌龄《从军行》"},
+  {text:"天生我材必有用，千金散尽还复来。", author:"—— 李白《将进酒》"},
+  {text:"人生若只如初见，何事秋风悲画扇。", author:"—— 纳兰性德《木兰词》"},
+  {text:"此心安处是吾乡。", author:"—— 苏轼《定风波》"},
+  {text:"举头望明月，低头思故乡。", author:"—— 李白《静夜思》"},
+  {text:"会当凌绝顶，一览众山小。", author:"—— 杜甫《望岳》"},
+  {text:"等闲识得东风面，万紫千红总是春。", author:"—— 朱熹《春日》"},
+  {text:"宠辱不惊，闲看庭前花开花落。", author:"—— 洪应明《菜根谭》"},
+  {text:"采得百花成蜜后，为谁辛苦为谁甜。", author:"—— 罗隐《蜂》"},
+  {text:"落红不是无情物，化作春泥更护花。", author:"—— 龚自珍《己亥杂诗》"},
+  {text:"竹杖芒鞋轻胜马，谁怕？一蓑烟雨任平生。", author:"—— 苏轼《定风波》"},
+  {text:"路漫漫其修远兮，吾将上下而求索。", author:"—— 屈原《离骚》"},
+  {text:"青山遮不住，毕竟东流去。", author:"—— 辛弃疾《菩萨蛮》"}
+];
+
+let favorites=JSON.parse(localStorage.getItem("favs")||"[]");
+
+function drawPoem(){
+  card.classList.add("press");
+  setTimeout(()=>{
+    card.classList.remove("press");
+    card.classList.add("float");
+    flashParticles();
+    setTimeout(()=>{
+      const p=poems[Math.floor(Math.random()*poems.length)];
+      poemEl.style.opacity=0;
+      authorEl.style.opacity=0;
+      setTimeout(()=>{
+        poemEl.textContent=p.text;
+        authorEl.textContent=p.author;
+        poemEl.style.opacity=1;
+        authorEl.style.opacity=1;
+      },300);
+    },250);
+    setTimeout(()=>card.classList.remove("float"),1000);
+  },100);
+  playClick();
+}
+
+/* 收藏逻辑 */
+document.getElementById("fav").onclick=()=>{
+  const q={text:poemEl.textContent,author:authorEl.textContent};
+  if(!favorites.find(f=>f.text===q.text)){
+    favorites.push(q);
+    localStorage.setItem("favs",JSON.stringify(favorites));
+    showToast("已收藏 💙");
+  }else showToast("已经收藏过啦 💫");
+  playClick();
+};
+document.getElementById("clear").onclick=()=>{
+  if(favorites.length===0){showToast("你还没有收藏诗签");return;}
+  const list=favorites.map(f=>`${f.text}<br>${f.author}`).join("<hr>");
+  const win=window.open("","_blank");
+  win.document.write(`<h2 style="font-family:sans-serif;color:#1565c0">📜 我的诗签收藏</h2><div>${list}</div>`);
+};
+document.getElementById("draw").onclick=drawPoem;
+
+function showToast(msg){
+  toast.textContent=msg;
+  toast.classList.add("show");
+  setTimeout(()=>toast.classList.remove("show"),1500);
+}
+function playClick(){
+  clickSound.currentTime=0;
+  clickSound.play().catch(()=>{});
+  if(window.navigator.vibrate) window.navigator.vibrate(60);
+}
+</script>
+</body>
+</html>

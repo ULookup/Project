@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ice Server · 高级压测</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+:root {
+  --bg:#0b0f14;--text:#e6edf3;--muted:#9fb0c3;
+  --accent:#4aa7ff;--accent2:#8be9fd;--error:#ff4d4f;--ok:#00e08a;
+}
+body{
+  margin:0;height:100vh;background:var(--bg);color:var(--text);
+  font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;overflow:hidden;
+}
+canvas{position:fixed;inset:0;z-index:0;}
+a.home{position:absolute;top:20px;left:20px;text-decoration:none;
+  background:rgba(255,255,255,0.1);padding:8px 14px;border-radius:10px;
+  color:var(--text);font-weight:600;backdrop-filter:blur(5px);}
+.container{
+  position:relative;z-index:2;padding:20px 30px;border-radius:20px;
+  background:rgba(255,255,255,0.05);box-shadow:0 0 25px rgba(74,167,255,0.1);
+  backdrop-filter:blur(12px);
+}
+h1{font-size:36px;margin:0 0 10px;}
+.controls{
+  display:flex;flex-direction:column;align-items:center;gap:10px;margin:10px 0;
+}
+input{
+  padding:8px 12px;border-radius:10px;border:1px solid #263244;
+  background:#121821;color:var(--text);outline:none;width:260px;
+  text-align:center;font-size:15px;
+}
+input[type=number]{width:140px;}
+button{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border:none;color:#001425;font-weight:700;padding:10px 22px;
+  border-radius:12px;cursor:pointer;margin-top:8px;transition:0.2s;
+}
+button:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(74,167,255,.35);}
+.stats{margin-top:16px;font-size:14px;color:var(--muted);white-space:pre-line;}
+.progress{
+  width:280px;height:8px;border-radius:8px;background:#1c2430;
+  overflow:hidden;margin-top:10px;
+}
+.progress-bar{
+  height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transition:width 0.2s ease;
+}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<a href="/" class="home">🏠 返回首页</a>
+<div class="container">
+  <h1>⚙️ Ice Server 压测面板</h1>
+  <p style="color:var(--muted)">测试服务器性能：响应速度、成功率、并发表现。</p>
+  <div class="controls">
+    <input id="url" placeholder="目标URL，例如 / 或 http://43.142.51.28:8080/">
+    <div>
+      并发数 <input type="number" id="concurrency" value="10" min="1" max="200">
+      请求总数 <input type="number" id="requests" value="100" min="10" max="10000">
+    </div>
+    <div>
+      <button id="start">开始压测</button>
+      <button id="stop">停止</button>
+    </div>
+  </div>
+  <div class="progress"><div class="progress-bar" id="bar"></div></div>
+  <div class="stats" id="result">未开始</div>
+</div>
+
+<script>
+/* === 背景动画 === */
+const c=document.getElementById("bg"),ctx=c.getContext("2d");
+let w,h,particles=[];
+function resize(){w=c.width=innerWidth;h=c.height=innerHeight;}resize();
+window.onresize=resize;
+for(let i=0;i<100;i++)particles.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*0.5,vy:(Math.random()-.5)*0.5,size:Math.random()*2});
+function draw(){
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle="rgba(74,167,255,0.5)";
+  for(const p of particles){
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,2*Math.PI);ctx.fill();
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+
+/* === 压测逻辑 === */
+let running=false;
+const res=document.getElementById("result"),bar=document.getElementById("bar");
+let total=0,ok=0,fail=0,startTime=0;
+
+async function worker(target,count){
+  for(let i=0;i<count&&running;i++){
+    const t0=performance.now();
+    try{
+      const r=await fetch(target,{cache:"no-store"});
+      const ms=Math.round(performance.now()-t0);
+      if(r.ok)ok++;else fail++;
+      total++;
+      updateStats(ms);
+    }catch(e){fail++;total++;updateStats();}
+  }
+}
+
+function updateStats(ms){
+  const totalReq=parseInt(document.getElementById("requests").value);
+  const percent=(total/totalReq*100).toFixed(1);
+  bar.style.width=percent+"%";
+  const elapsed=(performance.now()-startTime)/1000;
+  const qps=(total/elapsed).toFixed(2);
+  res.innerHTML=`进度: ${percent}%\n✅ 成功: ${ok} ❌ 失败: ${fail}\n平均QPS: ${qps}/s`;
+  if(ms)res.innerHTML+=`\n最新延迟: ${ms} ms`;
+}
+
+document.getElementById("start").onclick=async()=>{
+  if(running)return;
+  running=true;ok=fail=total=0;
+  res.textContent="🚀 开始压测中…";
+  const target=document.getElementById("url").value.trim()||"/";
+  const conc=parseInt(document.getElementById("concurrency").value);
+  const totalReq=parseInt(document.getElementById("requests").value);
+  const perThread=Math.ceil(totalReq/conc);
+  startTime=performance.now();
+  const tasks=[];
+  for(let i=0;i<conc;i++)tasks.push(worker(target,perThread));
+  await Promise.all(tasks);
+  running=false;
+  const duration=(performance.now()-startTime)/1000;
+  const avgQPS=(total/duration).toFixed(2);
+  const successRate=(ok/total*100).toFixed(1);
+  res.innerHTML+=`\n\n✅ 完成\n总用时: ${duration.toFixed(2)} s\n平均QPS: ${avgQPS}\n成功率: ${successRate}%`;
+};
+
+document.getElementById("stop").onclick=()=>{
+  running=false;
+  res.textContent+="\n⏹ 已停止";
+};
+</script>
+</body>
+</html>

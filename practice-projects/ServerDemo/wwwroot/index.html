@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>❄ Ice Server · 开发者导航</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+:root {
+  --bg: #0b0f14; --soft: #121821; --text: #e6edf3; --muted: #9fb0c3;
+  --accent: #4aa7ff; --accent2: #8be9fd; --ok:#00e08a;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f8fb; --soft: #eef3fa; --text: #0b1220; --muted: #5b6b7f;
+    --accent: #0078ff; --accent2: #00bcd4;
+  }
+}
+html, body {
+  margin:0; height:100%;
+  background: var(--bg); color: var(--text);
+  font:16px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", Helvetica, Arial;
+  overflow:hidden;
+}
+canvas { position:fixed; inset:0; z-index:0; }
+
+.wrap {
+  position:relative; z-index:1;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  height:100%; text-align:center;
+}
+h1 {
+  font-size:50px; margin:0 0 8px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  letter-spacing:.6px;
+}
+p { color:var(--muted); margin:0 0 36px; }
+
+.section { margin-bottom:50px; animation:fadein 0.8s ease; }
+.section h2 {
+  font-size:20px; color:var(--accent);
+  letter-spacing:1px; margin-bottom:16px;
+}
+.nav {
+  display:flex; flex-wrap:wrap; gap:18px;
+  justify-content:center; max-width:800px;
+}
+a.btn {
+  display:inline-block;
+  min-width:180px; padding:14px 24px;
+  border-radius:14px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#02111f; font-weight:700;
+  text-decoration:none; font-size:17px;
+  transition:0.25s; position:relative; overflow:hidden;
+}
+a.btn::after {
+  content:""; position:absolute; inset:0;
+  background:rgba(255,255,255,0.25); opacity:0; transition:opacity .25s;
+}
+a.btn:hover::after { opacity:1; }
+a.btn:hover { transform:translateY(-3px) scale(1.05); box-shadow:0 12px 28px rgba(74,167,255,.35); }
+
+footer {
+  position:absolute; bottom:14px; width:100%;
+  text-align:center; color:var(--muted); font-size:13px;
+}
+#console {
+  position:absolute; bottom:5px; left:10px; color:var(--muted);
+  font-family:monospace; font-size:12px; opacity:0.6;
+}
+@keyframes fadein { from { opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
+
+/* --- 彩蛋提示 --- */
+.easter {
+  position:absolute; top:20px; right:20px;
+  background:rgba(255,255,255,0.05); padding:6px 10px;
+  border-radius:8px; font-family:monospace; font-size:13px;
+  color:var(--muted); cursor:pointer;
+  transition:all .2s; user-select:none;
+}
+.easter:hover { background:rgba(255,255,255,0.1); color:var(--accent2); transform:translateY(-2px); }
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<div class="wrap">
+  <h1>Ice Server</h1>
+  <p>“叶绍程我喜欢你,和我交往吧！”</p>
+
+  <div class="section">
+    <h2>🧩 工具区</h2>
+    <div class="nav">
+      <a href="/tester/index.html" class="btn">🧠 调试首页</a>
+      <a href="/tester/load.html" class="btn">⚙️ 压力测试</a>
+      <a href="/404.html" class="btn">🚧 404 示例页</a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>🎮 功能区</h2>
+    <div class="nav">
+      <a href="/fun/chat.html" class="btn">💬 实时聊天室</a>
+      <a href="/fun/poet.html" class="btn">📜 诗签抽取</a>
+    </div>
+  </div>
+</div>
+
+<div class="easter" id="easter">>_ run easterEgg()</div>
+<div id="console"></div>
+
+<footer>© 2025 Ice Server · For developers who console.log("life")</footer>
+
+<script>
+// === 背景粒子动画 ===
+const c=document.getElementById("bg"),ctx=c.getContext("2d");
+let w,h,particles=[];
+function resize(){w=c.width=innerWidth;h=c.height=innerHeight;}
+window.addEventListener("resize",resize);resize();
+class Particle{
+  constructor(){this.x=Math.random()*w;this.y=Math.random()*h;
+  this.vx=(Math.random()-.5)*0.4;this.vy=(Math.random()-.5)*0.4;
+  this.size=Math.random()*2+0.8;}
+  update(){this.x+=this.vx;this.y+=this.vy;if(this.x<0||this.x>w)this.vx*=-1;if(this.y<0||this.y>h)this.vy*=-1;}
+  draw(){ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,2*Math.PI);
+  ctx.fillStyle="rgba(74,167,255,0.7)";ctx.fill();}
+}
+for(let i=0;i<120;i++)particles.push(new Particle());
+function animate(){ctx.clearRect(0,0,w,h);for(const p of particles){p.update();p.draw();}requestAnimationFrame(animate);}
+animate();
+
+// === 彩蛋部分 ===
+const consoleBox=document.getElementById("console");
+const easter=document.getElementById("easter");
+const eggs=[
+  "while(true){coffee++; sleep=0;}",
+  "undefined is not a bug, it's a feature.",
+  "git commit -m 'final_final_v2_realfinal'",
+  "There is no place like 127.0.0.1",
+  "MySQL is a piece of shit",
+  "Segmentation fault (core dumped)",
+  "console.log('Hello, Ice Developer!')"
+];
+function runEgg(){
+  let egg=eggs[Math.floor(Math.random()*eggs.length)];
+  consoleBox.textContent=`$ ${egg}`;
+  consoleBox.style.opacity=1;
+  setTimeout(()=>{consoleBox.style.opacity=0.6;},2000);
+}
+easter.onclick=runEgg;
+
+// === 秘密彩蛋：键盘组合 ===
+document.addEventListener("keydown",e=>{
+  if(e.ctrlKey && e.key==='i'){
+    runEgg();
+  }
+});
+</script>
+</body>
+</html>
